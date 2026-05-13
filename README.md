@@ -43,6 +43,7 @@ Options:
   -p, --path <path> (REQUIRED)    Path to the folder containing .cs files.
   -t, --type-names <type-names>   Specific classes to include. []
   --ignore-dependency             If true, skip dependency arrows.
+  -rns, --render-namespaces       If true, wrap classes in mermaid namespace blocks (top-level classes go under 'namespace global').
   --version                       Show version information
   -?, -h, --help                  Show help and usage information
 ```

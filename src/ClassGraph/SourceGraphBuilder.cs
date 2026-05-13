@@ -99,7 +99,7 @@ public class SourceGraphBuilder : IGraphBuilder
                     }
                     else
                     {
-                        var @class = BuildClassFromSyntax(typeDecl);
+                        var @class = BuildClassFromSyntax(typeDecl, ns);
                         graph.AddClass(@class);
                         _classesFound++;
                     }
@@ -117,7 +117,7 @@ public class SourceGraphBuilder : IGraphBuilder
                     if (nsList.Any() && !nsList.Contains(ns))
                         continue;
 
-                    var @class = BuildClassFromEnum(enumDecl);
+                    var @class = BuildClassFromEnum(enumDecl, ns);
                     graph.AddClass(@class);
                     _classesFound++;
                 }
@@ -188,10 +188,12 @@ public class SourceGraphBuilder : IGraphBuilder
     private Class MergePartialTypes(List<TypeDeclarationSyntax> partials)
     {
         var first = partials[0];
+        var ns = GetNamespace(first);
         var @class = new Class(first.Identifier.Text)
         {
             IsInterface = first is InterfaceDeclarationSyntax,
-            Kind = DetermineTypeKind(first)
+            Kind = DetermineTypeKind(first),
+            Namespace = ns
         };
 
         // Merge all partial declarations
@@ -227,12 +229,13 @@ public class SourceGraphBuilder : IGraphBuilder
         return @class;
     }
 
-    private Class BuildClassFromEnum(EnumDeclarationSyntax enumDecl)
+    private Class BuildClassFromEnum(EnumDeclarationSyntax enumDecl, string ns)
     {
         var c = new Class(enumDecl.Identifier.Text)
         {
             IsInterface = false,
-            Kind = TypeKind.Enum
+            Kind = TypeKind.Enum,
+            Namespace = ns
         };
 
         // Extract enum member names
@@ -244,12 +247,13 @@ public class SourceGraphBuilder : IGraphBuilder
         return c;
     }
 
-    private Class BuildClassFromSyntax(TypeDeclarationSyntax typeDecl)
+    private Class BuildClassFromSyntax(TypeDeclarationSyntax typeDecl, string ns)
     {
         var c = new Class(typeDecl.Identifier.Text)
         {
             IsInterface = typeDecl is InterfaceDeclarationSyntax,
-            Kind = DetermineTypeKind(typeDecl)
+            Kind = DetermineTypeKind(typeDecl),
+            Namespace = ns
         };
 
         // Handle Inheritance (Base Class) and Interfaces

@@ -101,6 +101,7 @@ public class ClassRelation
 public class Class
 {
     public string Name { get; set; }
+    public string Namespace { get; set; } = string.Empty;
     public string? BaseType { get; set; }
     public IList<string> ImplementedInterface { get; set; } = new List<string>();
     public bool IsInterface { get; set; } = false;

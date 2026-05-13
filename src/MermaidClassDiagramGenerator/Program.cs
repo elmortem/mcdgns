@@ -44,6 +44,10 @@ var excludePatternsOption = new Option<IList<string>>(
     description: "Additional patterns to exclude from file search (e.g., 'Migrations', 'Generated').",
     getDefaultValue: () => new List<string>());
 
+var renderNamespacesOption = new Option<bool>(
+    aliases: new[] { "--render-namespaces", "-rns" },
+    description: "If true, wrap classes in mermaid namespace blocks by their C# namespace. Top-level classes go under 'namespace global'.");
+
 var rootCommand = new RootCommand("Generate mermaid.js class-diagram from C# source code files.");
 rootCommand.AddOption(outputOption);
 rootCommand.AddOption(nsOption);
@@ -54,6 +58,7 @@ rootCommand.AddOption(excludeSystemTypesOption);
 rootCommand.AddOption(visibilityOption);
 rootCommand.AddOption(verboseOption);
 rootCommand.AddOption(excludePatternsOption);
+rootCommand.AddOption(renderNamespacesOption);
 
 rootCommand.SetHandler((context) =>
 {
@@ -66,8 +71,9 @@ rootCommand.SetHandler((context) =>
     var visLevel = context.ParseResult.GetValueForOption(visibilityOption);
     var verbose = context.ParseResult.GetValueForOption(verboseOption);
     var excludePatterns = context.ParseResult.GetValueForOption(excludePatternsOption);
+    var renderNamespaces = context.ParseResult.GetValueForOption(renderNamespacesOption);
 
-    Execute(output!, ns!, inputPath!, tns!, ignoreDep, excludeSys, visLevel!, verbose, excludePatterns!);
+    Execute(output!, ns!, inputPath!, tns!, ignoreDep, excludeSys, visLevel!, verbose, excludePatterns!, renderNamespaces);
 });
 
 return await rootCommand.InvokeAsync(args);
@@ -80,7 +86,8 @@ static void Execute(FileInfo outputFile,
     bool excludeSystemTypes,
     string visibilityLevel,
     bool verbose,
-    IList<string> excludePatterns)
+    IList<string> excludePatterns,
+    bool renderNamespaces)
 {
     try
     {
@@ -141,7 +148,10 @@ static void Execute(FileInfo outputFile,
         }
 
         // 3. Generate Mermaid diagram
-        var generator = new MermaidGenerator();
+        var generator = new MermaidGenerator
+        {
+            RenderNamespaces = renderNamespaces
+        };
         var text = generator.Generate(graph);
 
         // 4. Write output

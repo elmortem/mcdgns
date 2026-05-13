@@ -1,6 +1,8 @@
 namespace DiagramGenerator.ClassGraph;
 
 public class MermaidGenerator : IDiagramGenerator {
+  public bool RenderNamespaces { get; set; } = false;
+
   private static string MDFrame =
       @"```mermaid
 classDiagram
@@ -16,31 +18,60 @@ classDiagram
 }}";
 
   public string Generate(Graph graph) {
-    var allClass = new List<string>();
-    foreach (var @class in graph.Classes) {
-      var classString = GenerateClass(@class);
-      allClass.Add(classString);
-    }
-
     var allRelation = new List<string>();
     foreach (var relation in graph.Relations) {
       var relationString = GenerateRelation(relation);
       allRelation.Add(relationString);
     }
-
-    // Join classes with blank line between them
-    var classSection = string.Join("\r\n\r\n", allClass);
-
-    // Join relations without blank lines between them
     var relationSection = string.Join("\r\n", allRelation);
 
-    // Add blank line between class section and relation section if both exist
+    string classSection;
+    if (RenderNamespaces) {
+      classSection = GenerateGroupedByNamespace(graph);
+    }
+    else {
+      var allClass = new List<string>();
+      foreach (var @class in graph.Classes) {
+        var classString = GenerateClass(@class);
+        allClass.Add(classString);
+      }
+      classSection = string.Join("\r\n\r\n", allClass);
+    }
+
     var sections = classSection;
     if (!string.IsNullOrEmpty(relationSection)) {
       sections += "\r\n\r\n" + relationSection;
     }
 
     return string.Format(MDFrame, sections, string.Empty);
+  }
+
+  private string GenerateGroupedByNamespace(Graph graph) {
+    var groups = graph.Classes
+      .GroupBy(c => string.IsNullOrWhiteSpace(c.Namespace) ? "global" : c.Namespace)
+      .OrderBy(g => g.Key, StringComparer.Ordinal);
+
+    var blocks = new List<string>();
+    foreach (var group in groups) {
+      var classBlocks = new List<string>();
+      foreach (var @class in group) {
+        var classBlock = GenerateClass(@class);
+        classBlocks.Add(IndentBlock(classBlock, "  "));
+      }
+
+      var inner = string.Join("\r\n\r\n", classBlocks);
+      blocks.Add($"namespace {group.Key} {{\r\n{inner}\r\n}}");
+    }
+
+    return string.Join("\r\n\r\n", blocks);
+  }
+
+  private static string IndentBlock(string block, string indent) {
+    var lines = block.Split("\r\n");
+    for (var i = 0; i < lines.Length; i++) {
+      lines[i] = indent + lines[i];
+    }
+    return string.Join("\r\n", lines);
   }
 
   private string GenerateClass(Class @class) {
