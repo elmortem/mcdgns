@@ -7,7 +7,7 @@ public class Graph
 
     public bool AddClass(Class @class)
     {
-        if (!Classes.Any(o => o.Name == @class.Name))
+        if (!Classes.Any(o => o.Fqn == @class.Fqn))
         {
             Classes.Add(@class);
             return true;
@@ -20,7 +20,7 @@ public class Graph
         Relations = new List<ClassRelation>();
         foreach (var @class in Classes)
         {
-            var baseClass = Classes.Where(o => o.Name == @class.BaseType).FirstOrDefault();
+            var baseClass = Classes.FirstOrDefault(o => o.Fqn == @class.BaseType);
 
             //inheritance
             if (baseClass != null)
@@ -32,7 +32,7 @@ public class Graph
             // implementation
             foreach (var intf in @class.ImplementedInterface)
             {
-                var intfClass = Classes.Where(o => o.Name == intf).FirstOrDefault();
+                var intfClass = Classes.FirstOrDefault(o => o.Fqn == intf);
 
                 if (intfClass != null)
                 {
@@ -59,7 +59,7 @@ public class Graph
 
                     foreach (var depdType in depdList)
                     {
-                        var depdClass = Classes.Where(o => o.Name == depdType).FirstOrDefault();
+                        var depdClass = Classes.FirstOrDefault(o => o.Fqn == depdType);
                         if (depdClass != null)
                         {
                             var relation = new ClassRelation(@class, depdClass, RelationType.Dependency);
@@ -73,7 +73,7 @@ public class Graph
 
     public bool AddRelation(ClassRelation relation)
     {
-        if (!Relations.Any(o => o.From.Name == relation.From.Name && o.To.Name == relation.To.Name && o.Type == relation.Type))
+        if (!Relations.Any(o => o.From.Fqn == relation.From.Fqn && o.To.Fqn == relation.To.Fqn && o.Type == relation.Type))
         {
             Relations.Add(relation);
             return true;
@@ -102,6 +102,7 @@ public class Class
 {
     public string Name { get; set; }
     public string Namespace { get; set; } = string.Empty;
+    public string Fqn => string.IsNullOrEmpty(Namespace) ? Name : $"{Namespace}.{Name}";
     public string? BaseType { get; set; }
     public IList<string> ImplementedInterface { get; set; } = new List<string>();
     public bool IsInterface { get; set; } = false;

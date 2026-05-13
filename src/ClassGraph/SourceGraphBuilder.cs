@@ -310,19 +310,21 @@ public class SourceGraphBuilder : IGraphBuilder
 
         foreach (var baseType in typeDecl.BaseList.Types)
         {
-            var typeName = baseType.Type.ToString();
+            var fallbackName = baseType.Type.ToString();
 
-            // Use semantic model if available for accurate type detection
             if (_semanticModel != null)
             {
                 var symbolInfo = _semanticModel.GetSymbolInfo(baseType.Type);
                 if (symbolInfo.Symbol is INamedTypeSymbol namedType)
                 {
+                    var ns = namedType.ContainingNamespace?.ToDisplayString();
+                    var isGlobal = string.IsNullOrEmpty(ns) || ns == "<global namespace>";
+                    var typeName = isGlobal ? namedType.Name : $"{ns}.{namedType.Name}";
+
                     if (namedType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Interface)
                     {
                         if (!ShouldExcludeType(namedType.ContainingNamespace?.ToDisplayString()))
                         {
-                            // Deduplicate interfaces
                             if (!c.ImplementedInterface.Contains(typeName))
                             {
                                 c.ImplementedInterface.Add(typeName);
@@ -340,17 +342,16 @@ public class SourceGraphBuilder : IGraphBuilder
                 }
             }
 
-            // Fallback to heuristic if semantic model is not available
-            if (c.BaseType == null && (!typeName.StartsWith("I") || (typeName.Length > 1 && char.IsLower(typeName[1]))))
+            // Fallback to heuristic if semantic model is not available or symbol not resolved
+            if (c.BaseType == null && (!fallbackName.StartsWith("I") || (fallbackName.Length > 1 && char.IsLower(fallbackName[1]))))
             {
-                c.BaseType = typeName;
+                c.BaseType = fallbackName;
             }
             else
             {
-                // Deduplicate interfaces
-                if (!c.ImplementedInterface.Contains(typeName))
+                if (!c.ImplementedInterface.Contains(fallbackName))
                 {
-                    c.ImplementedInterface.Add(typeName);
+                    c.ImplementedInterface.Add(fallbackName);
                 }
             }
         }
@@ -361,6 +362,24 @@ public class SourceGraphBuilder : IGraphBuilder
         if (!ExcludeSystemTypes || string.IsNullOrEmpty(typeNamespace)) return false;
 
         return _systemNamespaces.Any(ns => typeNamespace.StartsWith(ns));
+    }
+
+    private string ResolveTypeReference(TypeSyntax typeSyntax, string fallback)
+    {
+        if (_semanticModel == null)
+        {
+            return fallback;
+        }
+
+        var symbolInfo = _semanticModel.GetSymbolInfo(typeSyntax);
+        if (symbolInfo.Symbol is INamedTypeSymbol namedType)
+        {
+            var ns = namedType.ContainingNamespace?.ToDisplayString();
+            var isGlobal = string.IsNullOrEmpty(ns) || ns == "<global namespace>";
+            return isGlobal ? namedType.Name : $"{ns}.{namedType.Name}";
+        }
+
+        return fallback;
     }
 
     /// <summary>
@@ -401,13 +420,15 @@ public class SourceGraphBuilder : IGraphBuilder
         // Case: "Medication" -> Simple Identifier
         if (typeSyntax is IdentifierNameSyntax identifier)
         {
-            AddTypeDependency(identifier.Identifier.Text, member);
+            var typeName = ResolveTypeReference(identifier, identifier.Identifier.Text);
+            AddTypeDependency(typeName, member);
         }
 
         // Case: Qualified names like "System.String"
         if (typeSyntax is QualifiedNameSyntax qualifiedName)
         {
-            var typeName = qualifiedName.Right.Identifier.Text;
+            var fallback = qualifiedName.Right.Identifier.Text;
+            var typeName = ResolveTypeReference(qualifiedName, fallback);
             AddTypeDependency(typeName, member);
         }
     }
@@ -425,11 +446,14 @@ public class SourceGraphBuilder : IGraphBuilder
         }
         else if (arg is IdentifierNameSyntax identifier)
         {
-            AddTypeDependency(identifier.Identifier.Text, member);
+            var typeName = ResolveTypeReference(identifier, identifier.Identifier.Text);
+            AddTypeDependency(typeName, member);
         }
         else if (arg is QualifiedNameSyntax qualifiedName)
         {
-            AddTypeDependency(qualifiedName.Right.Identifier.Text, member);
+            var fallback = qualifiedName.Right.Identifier.Text;
+            var typeName = ResolveTypeReference(qualifiedName, fallback);
+            AddTypeDependency(typeName, member);
         }
         else if (arg is NullableTypeSyntax nullable)
         {
