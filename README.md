@@ -40,7 +40,7 @@ Usage:
 Options:
   -o, --output <output>           Output file. [default: output.md]
   -ns, --namespace <namespace>    Namespace filter. []
-  -p, --path <path> (REQUIRED)    Path to the folder containing .cs files.
+  -p, --path <path>               Path to the folder containing .cs files. [default: current working directory]
   -t, --type-names <type-names>   Specific classes to include. []
   --ignore-dependency             If true, skip dependency arrows.
   -rns, --render-namespaces       If true, wrap classes in mermaid namespace blocks (top-level classes go under 'namespace global').

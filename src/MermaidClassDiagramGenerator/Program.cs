@@ -11,11 +11,10 @@ var nsOption = new Option<IList<string>>(
     description: "Namespace filter.",
     getDefaultValue: () => new List<string>());
 
-// CHANGED: Input is now a folder path
 var inputPathOption = new Option<string>(
-        aliases: new[] { "--path", "-p" },
-        description: "Path to the folder containing .cs files.")
-    { IsRequired = true };
+    aliases: new[] { "--path", "-p" },
+    description: "Path to the folder containing .cs files. Defaults to the current working directory.",
+    getDefaultValue: Directory.GetCurrentDirectory);
 
 var tnOption = new Option<IList<string>>(
     aliases: new[] { "--type-names", "-t" },
