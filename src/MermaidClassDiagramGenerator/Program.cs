@@ -47,7 +47,10 @@ var renderNamespacesOption = new Option<bool>(
     aliases: new[] { "--render-namespaces", "-rns" },
     description: "If true, wrap classes in mermaid namespace blocks by their C# namespace. Top-level classes go under 'namespace global'.");
 
-var rootCommand = new RootCommand("Generate mermaid.js class-diagram from C# source code files.");
+var rootCommand = new RootCommand("Generate mermaid.js class-diagram from C# source code files.")
+{
+    Name = "mcdgns"
+};
 rootCommand.AddOption(outputOption);
 rootCommand.AddOption(nsOption);
 rootCommand.AddOption(inputPathOption);

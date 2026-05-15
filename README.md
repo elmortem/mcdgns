@@ -3,9 +3,9 @@ Mermaid Class Diagram Generator with Namespaces (mcdgns)
 
 ## What is mcdgns
 
-mcdg (Mermaid Class Diagram Generator) is a dotnet tool for generating mermaid.js class diagrams directly from C# source code (`.cs` files).
+mcdgns (Mermaid Class Diagram Generator with Namespaces) is a dotnet tool for generating mermaid.js class diagrams directly from C# source code (`.cs` files).
 
-Unlike other tools that require compiled assemblies (DLLs), `mcdg` uses Roslyn to parse your source code files recursively from a directory. This allows you to generate diagrams for projects that may not currently build or to quickly visualize a folder of scripts.
+Unlike other tools that require compiled assemblies (DLLs), `mcdgns` uses Roslyn to parse your source code files recursively from a directory. This allows you to generate diagrams for projects that may not currently build or to quickly visualize a folder of scripts.
 
 ## Credits
 
@@ -20,7 +20,7 @@ The core graph generation logic and structure were originally written by [rtfs](
     ```shell
     $ dotnet tool install --global mcdgns
     You can invoke the tool using the following command: mcdgns
-    Tool 'mcdgns' (version '1.0.0') was successfully installed.
+    Tool 'mcdgns' (version '1.0.1') was successfully installed.
     ```
 
    *Alternatively, if running from source:*
