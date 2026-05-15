@@ -3,6 +3,8 @@ namespace DiagramGenerator.ClassGraph;
 public class MermaidGenerator : IDiagramGenerator {
   public bool RenderNamespaces { get; set; } = false;
 
+  private Dictionary<string, string> _idByFqn = new();
+
   private static string MDFrame =
       @"```mermaid
 classDiagram
@@ -18,6 +20,8 @@ classDiagram
 }}";
 
   public string Generate(Graph graph) {
+    _idByFqn = BuildIdMap(graph.Classes);
+
     var allRelation = new List<string>();
     foreach (var relation in graph.Relations) {
       var relationString = GenerateRelation(relation);
@@ -104,8 +108,36 @@ classDiagram
     // Join all lines without trailing newline
     var content = string.Join("\r\n", lines);
 
-    return string.Format(ClassFrame, @class.Name, content, string.Empty);
+    return string.Format(ClassFrame, GetClassHeader(@class), content, string.Empty);
   }
+
+  private string GetClassHeader(Class @class) {
+    var id = GetClassId(@class);
+    return id == @class.Name ? @class.Name : $"{id}[\"{@class.Name}\"]";
+  }
+
+  private string GetClassId(Class @class) {
+    return _idByFqn.TryGetValue(@class.Fqn, out var id) ? id : @class.Name;
+  }
+
+  private static Dictionary<string, string> BuildIdMap(IList<Class> classes) {
+    var map = new Dictionary<string, string>();
+    foreach (var group in classes.GroupBy(c => c.Name)) {
+      if (group.Count() > 1) {
+        foreach (var c in group) {
+          map[c.Fqn] = SanitizeFqn(c.Fqn);
+        }
+      }
+      else {
+        var c = group.Single();
+        map[c.Fqn] = c.Name;
+      }
+    }
+    return map;
+  }
+
+  private static string SanitizeFqn(string fqn) =>
+    new string(fqn.Select(ch => char.IsLetterOrDigit(ch) ? ch : '_').ToArray());
 
   private string GetTypeAnnotation(TypeKind kind) {
     return kind switch {
@@ -148,14 +180,17 @@ classDiagram
   }
 
   private string GenerateRelation(ClassRelation relation) {
+    var toId = GetClassId(relation.To);
+    var fromId = GetClassId(relation.From);
+
     // For implementation, use the correct Mermaid syntax with "implements" label
     // Interface (To) should be on the left, implementing class (From) on the right
     if (relation.Type == RelationType.Implementation) {
-      return $"{relation.To.Name} <|.. {relation.From.Name} : implements";
+      return $"{toId} <|.. {fromId} : implements";
     }
 
     var relationNotion = GetRelationNotion(relation.Type);
-    return $"{relation.To.Name} {relationNotion} {relation.From.Name}";
+    return $"{toId} {relationNotion} {fromId}";
   }
 
   private string GetRelationNotion(RelationType type) {
