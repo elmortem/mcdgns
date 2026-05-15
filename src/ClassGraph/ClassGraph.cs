@@ -67,6 +67,46 @@ public class Graph
                         }
                     }
                 }
+
+                foreach (var method in @class.Methods)
+                {
+                    var depdList = method.TypeParams.ToList();
+                    if (method.Type != null)
+                    {
+                        depdList.Add(method.Type);
+                    }
+                    depdList = depdList.Distinct().ToList();
+
+                    foreach (var depdType in depdList)
+                    {
+                        var depdClass = Classes.FirstOrDefault(o => o.Fqn == depdType);
+                        if (depdClass != null && depdClass.Fqn != @class.Fqn)
+                        {
+                            var relation = new ClassRelation(@class, depdClass, RelationType.Dependency);
+                            AddRelation(relation);
+                        }
+                    }
+                }
+
+                foreach (var usedType in @class.UsedTypes)
+                {
+                    var usedClass = Classes.FirstOrDefault(o => o.Fqn == usedType);
+                    if (usedClass != null && usedClass.Fqn != @class.Fqn)
+                    {
+                        var relation = new ClassRelation(@class, usedClass, RelationType.Usage);
+                        AddRelation(relation);
+                    }
+                }
+
+                foreach (var eventType in @class.SubscribedEventTypes)
+                {
+                    var eventClass = Classes.FirstOrDefault(o => o.Fqn == eventType);
+                    if (eventClass != null && eventClass.Fqn != @class.Fqn)
+                    {
+                        var relation = new ClassRelation(@class, eventClass, RelationType.EventSubscription);
+                        AddRelation(relation);
+                    }
+                }
             }
         }
     }
@@ -110,6 +150,8 @@ public class Class
     public IList<Property> Properties { get; set; } = new List<Property>();
     public IList<Method> Methods { get; set; } = new List<Method>();
     public IList<string> EnumValues { get; set; } = new List<string>();
+    public IList<string> UsedTypes { get; set; } = new List<string>();
+    public IList<string> SubscribedEventTypes { get; set; } = new List<string>();
 
     public Class(string name)
     {
@@ -182,7 +224,9 @@ public enum RelationType
 {
     Implementation = 0,
     Inheritance,
-    Dependency
+    Dependency,
+    Usage,
+    EventSubscription
 }
 
 public enum TypeKind

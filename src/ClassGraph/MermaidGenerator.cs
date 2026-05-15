@@ -183,24 +183,17 @@ classDiagram
     var toId = GetClassId(relation.To);
     var fromId = GetClassId(relation.From);
 
-    // For implementation, use the correct Mermaid syntax with "implements" label
-    // Interface (To) should be on the left, implementing class (From) on the right
-    if (relation.Type == RelationType.Implementation) {
-      return $"{toId} <|.. {fromId} : implements";
-    }
-
-    var relationNotion = GetRelationNotion(relation.Type);
-    return $"{toId} {relationNotion} {fromId}";
-  }
-
-  private string GetRelationNotion(RelationType type) {
-    switch (type) {
-      case RelationType.Inheritance:
-        return "<|--";
+    switch (relation.Type) {
       case RelationType.Implementation:
-        return "..|>"; // Not used directly anymore, handled in GenerateRelation
+        return $"{toId} <|.. {fromId} : implements";
+      case RelationType.Inheritance:
+        return $"{toId} <|-- {fromId}";
       case RelationType.Dependency:
-        return "<--"; // Defines the arrow direction for dependency
+        return $"{fromId} ..> {toId}";
+      case RelationType.Usage:
+        return $"{fromId} ..> {toId} : uses";
+      case RelationType.EventSubscription:
+        return $"{fromId} ..> {toId} : subscribes";
       default:
         return string.Empty;
     }

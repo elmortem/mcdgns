@@ -10,7 +10,7 @@
     <ToolCommandName>mcdgns</ToolCommandName>
     <PackageOutputPath>../../nupkg</PackageOutputPath>
 
-    <Version>1.1.3</Version>
+    <Version>1.1.4</Version>
     <PackageId>mcdgns</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>mermaid;diagram;classdiagram;generator;C#;markdown;roslyn</PackageTags>

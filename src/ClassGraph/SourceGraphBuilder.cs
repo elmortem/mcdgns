@@ -222,6 +222,14 @@ public class SourceGraphBuilder : IGraphBuilder
                 var m = new Method(method.Identifier.Text, GetVisibility(method.Modifiers));
                 m.Type = method.ReturnType.ToString();
                 ExtractTypeDependencies(method.ReturnType, m);
+                foreach (var param in method.ParameterList.Parameters)
+                {
+                    if (param.Type != null)
+                    {
+                        ExtractTypeDependencies(param.Type, m);
+                    }
+                }
+                AnalyzeMethodBody(method, @class);
                 @class.AddMethod(m);
             }
         }
@@ -286,10 +294,83 @@ public class SourceGraphBuilder : IGraphBuilder
 
             ExtractTypeDependencies(method.ReturnType, m);
 
+            foreach (var param in method.ParameterList.Parameters)
+            {
+                if (param.Type != null)
+                {
+                    ExtractTypeDependencies(param.Type, m);
+                }
+            }
+
+            AnalyzeMethodBody(method, c);
+
             c.AddMethod(m);
         }
 
         return c;
+    }
+
+    private void AnalyzeMethodBody(MethodDeclarationSyntax method, Class @class)
+    {
+        if (_semanticModel == null) return;
+
+        SyntaxNode? body = method.Body;
+        if (body == null && method.ExpressionBody != null)
+        {
+            body = method.ExpressionBody.Expression;
+        }
+        if (body == null) return;
+
+        foreach (var invocation in body.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+        {
+            var symbolInfo = _semanticModel.GetSymbolInfo(invocation);
+            var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
+            if (symbol is IMethodSymbol methodSymbol)
+            {
+                var containingType = methodSymbol.ContainingType;
+                if (containingType == null) continue;
+                if (ShouldExcludeType(containingType.ContainingNamespace?.ToDisplayString())) continue;
+
+                var typeName = GetFullTypeName(containingType);
+                if (typeName == @class.Fqn) continue;
+                if (!@class.UsedTypes.Contains(typeName))
+                {
+                    @class.UsedTypes.Add(typeName);
+                }
+            }
+        }
+
+        foreach (var assignment in body.DescendantNodesAndSelf().OfType<AssignmentExpressionSyntax>())
+        {
+            if (!assignment.IsKind(SyntaxKind.AddAssignmentExpression) &&
+                !assignment.IsKind(SyntaxKind.SubtractAssignmentExpression))
+            {
+                continue;
+            }
+
+            var symbolInfo = _semanticModel.GetSymbolInfo(assignment.Left);
+            var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
+            if (symbol is IEventSymbol eventSymbol)
+            {
+                var containingType = eventSymbol.ContainingType;
+                if (containingType == null) continue;
+                if (ShouldExcludeType(containingType.ContainingNamespace?.ToDisplayString())) continue;
+
+                var typeName = GetFullTypeName(containingType);
+                if (typeName == @class.Fqn) continue;
+                if (!@class.SubscribedEventTypes.Contains(typeName))
+                {
+                    @class.SubscribedEventTypes.Add(typeName);
+                }
+            }
+        }
+    }
+
+    private string GetFullTypeName(INamedTypeSymbol type)
+    {
+        var ns = type.ContainingNamespace?.ToDisplayString();
+        var isGlobal = string.IsNullOrEmpty(ns) || ns == "<global namespace>";
+        return isGlobal ? type.Name : $"{ns}.{type.Name}";
     }
 
     private TypeKind DetermineTypeKind(TypeDeclarationSyntax typeDecl)
