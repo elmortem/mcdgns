@@ -44,6 +44,7 @@ Options:
   -t, --type-names <type-names>   Specific classes to include. []
   --ignore-dependency             If true, skip dependency arrows.
   -rns, --render-namespaces       If true, wrap classes in mermaid namespace blocks (top-level classes go under 'namespace global').
+  --exclude-tests                 If true, skip .cs files belonging to test projects (detected via Microsoft.NET.Test.Sdk PackageReference or <IsTestProject>true</IsTestProject> in csproj).
   --version                       Show version information
   -?, -h, --help                  Show help and usage information
 ```
